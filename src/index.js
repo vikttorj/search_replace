@@ -230,9 +230,9 @@ Questions:
 
 function titleCLI() {
     console.log(`\n
-                            dP          d8888888888P         
-                            dP                 .d8'          
-                            88               .d8'          
+                             dP          d8888888888P         
+                             dP                 .d8'          
+                             88               .d8'          
   88d888b. .d8888b. 88d888b. 88 .d8888b.    .d8'      .d8888b. 
   88'  '88 88ooood8 88'  '88 88 88'  '88  .d8'        88ooood8 
   88       88.      88.  .88 88 88.  .88 d8'          88.   
