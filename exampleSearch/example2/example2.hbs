@@ -1,0 +1,572 @@
+<WrapperMain as |wrapper|>
+	<wrapper.header
+		@title={{t "label.myInvestmentsCheckpoint.behavior"}}
+		@type="modal-primary"
+		@right="close"
+		@close={{this.closeModal}}
+	/>
+
+	<div class="content wrapper flexy-item">
+		<MainContent>
+			<Banners::BannerMarquee class="set-margin-bottom-2" @contentHover={{true}}>
+				<Panels::PanelOffer @orientation="horizontal" data-id="howDoesBehave" data-theme="dark" as |panel|>
+					<panel.container as |container|>
+						<container.media @image={{image-path "microillustrations/investment_portfolio.png"}} />
+						<container.content
+							@title={{t "label.myInvestmentsCheckpoint.howDoesBehave" name=@model.fund.displayableName}}
+						/>
+					</panel.container>
+				</Panels::PanelOffer>
+				<Lists::ListSimple data-id="profitabilitiesList" data-theme="dark" as |list|>
+					<list.item
+						@key={{t "label.myInvestmentsCheckpoint.profitabilityCurrentYear"}}
+						@value={{bbva-format-number
+							@model.fund.extendedData.profitabilityCurrentYear.percentage
+							style="percent"
+							negativeClass=" "
+						}}
+                        @text_to_search="value_propr"
+						@badgeVariability={{component
+							"badges/badge-variability"
+							size="large"
+							data-orientation=@model.fund.extendedData.profitabilityCurrentYear.badge.orientation
+							data-status=@model.fund.extendedData.profitabilityCurrentYear.badge.status
+						}}
+					/>
+					<list.item
+						@key={{t "label.myInvestmentsCheckpoint.profitabilityCustomYear" count=this.profitabilityCustomYear.count}}
+						@value={{if
+							this.profitabilityCustomYear.percentage
+							(bbva-format-number this.profitabilityCustomYear.percentage style="percent" negativeClass=" ")
+							"-"
+						}}
+						@badgeVariability={{component
+							"badges/badge-variability"
+							size="large"
+							data-orientation=this.profitabilityCustomYear.badge.orientation
+							data-status=this.profitabilityCustomYear.badge.status
+						}}
+					/>
+				</Lists::ListSimple>
+			</Banners::BannerMarquee>
+			<Progress::ProgressStepVertical
+				class="set-margin-horizontal-2 set-margin-bottom-2 box-look"
+				data-theme="light"
+				@boxLook={{true}}
+				as |progress|
+			>
+				<progress.step
+					@title={{t "label.myInvestmentsCheckpoint.recruitmentFund"}}
+					@date={{if (is-empty @model.openingDate) "-" (bbva-format-date @model.openingDate withFormat="DD MMMM YYYY")}}
+					@text={{t "label.myInvestmentsCheckpoint.initialPhase"}}
+				/>
+				<progress.step
+					@title={{t "label.now"}}
+					@date={{if (is-empty @model.openingDate) "-" (years-and-months-from-a-date @model.openingDate)}}
+					@status="success"
+					@text={{t "label.myInvestmentsCheckpoint.earlyPhase"}}
+				/>
+				<progress.step
+					@title={{t "label.myInvestmentsCheckpoint.horizonTemporaryMinimum"}}
+					@date={{if (is-empty @model.openingDate) "-" this.horizonTemporaryMinimum}}
+					@text={{t "label.myInvestmentsCheckpoint.horizonTemporaryRecommended" start=3 end=5}}
+				/>
+			</Progress::ProgressStepVertical>
+			{{#if this.fundHistoricalIsVisible}}
+				<div class="panel-container" data-theme="light100">
+					<Panels::PanelOffer @orientation="horizontal" data-id="fundCharacteristics" as |panel|>
+						<panel.container as |container|>
+							<container.media @image={{image-path "microillustrations/portionpaycheck_rule.png"}} />
+							<container.content
+								@text={{t "label.myInvestmentsCheckpoint.fundCharacteristicsDescription"}}
+								@title={{t "label.myInvestmentsCheckpoint.fundCharacteristics"}}
+							/>
+						</panel.container>
+					</Panels::PanelOffer>
+					<Lists::ListSimple as |list|>
+						<list.item
+							@key={{format-bold (t "label.volatility")}}
+							@value={{if
+								@model.fund.extendedData.volatilityOneYear.value
+								(bbva-format-number @model.fund.extendedData.volatilityOneYear.value style="percent" negativeClass=" ")
+								"-"
+							}}
+						/>
+						<list.item
+							@key={{format-bold (t "label.sharpeRatio")}}
+							@value={{if
+								@model.fund.extendedData.sharpeRatioOneYear.value
+								(bbva-format-number @model.fund.extendedData.sharpeRatioOneYear.value style="percent" negativeClass=" ")
+								"-"
+							}}
+						/>
+					</Lists::ListSimple>
+					<p class="color_text-neutral txt_s set-padding-horizontal-2">
+						{{t "label.myInvestmentsCheckpoint.source"}}
+					</p>
+					<div class="set-padding-vertical-2">
+						<Links::LinkItem
+							@text={{t "label.moreInformation"}}
+							@onClick={{open-modal "more-info" (hash isInternationalFund=this.model.isInternationalFund)}}
+						/>
+					</div>
+				</div>
+				<div class="panel-container" data-theme="dark400">
+					<Panels::PanelOffer @orientation="horizontal" data-id="historicProfitability" as |panel|>
+						<panel.container as |container|>
+							<container.media @image={{image-path "banners/ilustracion_historico_neutro.png"}} />
+							<container.content
+								@title={{t "label.historicProfitability"}}
+								@text={{t "label.myInvestmentsCheckpoint.historicProfitabilityDescription"}}
+							/>
+						</panel.container>
+					</Panels::PanelOffer>
+					<div class="set-padding">
+						<Forms::FormSelect
+							@label={{t "label.period"}}
+							@value={{this.historicalProfitabilityPeriodSelected}}
+							@title={{t "label.countYears" count=this.historicalProfitabilityPeriodSelected}}
+							@validations={{array (validators/required)}}
+							@onChange={{this.setHistoricalProfitabilityValues}}
+							as |select|
+						>
+							{{#each @model.historicalPeriods as |period|}}
+								<select.option @value={{period.labelValue}}>{{t period.label count=period.labelValue}}</select.option>
+							{{/each}}
+						</Forms::FormSelect>
+					</div>
+					<div class="set-padding">
+						{{#if this.historicalProfitabilityError}}
+							<Panels::PanelInfo @image={{image-path "banners/error.svg"}} @size="small" as |panel|>
+								<panel.text>
+									{{t "label.myInvestmentsCheckpoint.error"}}
+								</panel.text>
+							</Panels::PanelInfo>
+						{{else}}
+							<Lists::ListDefinitionAmount
+								@align="center"
+								@title={{t
+									"label.historicProfitabilityWithDate"
+									date=(lowercase (bbva-format-date this.selectedHistoricalProfitability.valueDate))
+								}}
+								@amount={{if
+									this.selectedHistoricalProfitability
+									(bbva-format-number
+										this.selectedHistoricalProfitability.profitability style="percent" size="txt_xl" negativeClass=" "
+									)
+									"-"
+								}}
+								@badgeVariability={{component
+									"badges/badge-variability"
+									data-orientation=(if
+										(gt this.selectedHistoricalProfitability.profitability 0)
+										"increase"
+										(if (lt this.selectedHistoricalProfitability.profitability 0) "decrease")
+									)
+									data-status=(if
+										(gt this.selectedHistoricalProfitability.profitability 0)
+										"success"
+										(if (lt this.selectedHistoricalProfitability.profitability 0) "error" "neutral")
+									)
+									size="large"
+								}}
+							/>
+							<GraphPolylineContainer
+								@loading={{this.historicalProfitabilityLoading}}
+								@smallloading={{true}}
+								@onchange={{this.setSelectedIndexHistoricalProfitability}}
+								as |graph|
+							>
+								<graph.linear
+									@idLine="0"
+									@color="--color_te-2-l"
+									@isFilled={{false}}
+									@strokeWidth={{2}}
+									@data={{map-by "profitability" this.historicalProfitabilityValues}}
+								/>
+								<graph.marker @firstMarker={{true}} />
+								{{#if this.historicalProfitabilityShowZeroLine}}
+									<graph.zero />
+								{{/if}}
+							</GraphPolylineContainer>
+							<div class="item-space-wide space-between global-border top" aria-hidden="true">
+								<span
+									data-id="periodStartDate"
+									class="item-space color_text-neutral txt_xs set-padding-top set-padding-bottom"
+								>{{bbva-format-date this.historicalProfitabilityDates.firstDate withFormat="DD MMM YYYY"}}</span>
+								<span
+									data-id="periodEndDate"
+									class="item-space color_text-neutral txt_xs txt-align-r set-padding-top set-padding-bottom"
+								>{{bbva-format-date this.historicalProfitabilityDates.lastDate withFormat="DD MMM YYYY"}}</span>
+							</div>
+							<div class="set-margin-bottom">
+								<Links::LinkItem
+									data-id="moreInfoGraphProfitabilityId"
+									@align="left"
+									@text={{t "label.myInvestmentsCheckpoint.graphDescription.header"}}
+									@onClick={{open-modal
+										"more-info-graph"
+										(hash
+											description="label.myInvestmentsCheckpoint.graphDescription.historicalProfitability.description"
+											firstBlock="label.myInvestmentsCheckpoint.graphDescription.historicalProfitability.firstBlock"
+											params=this.historicalProfitabilityParams
+											title="label.myInvestmentsCheckpoint.graphDescription.historicalProfitability.title"
+										)
+									}}
+								/>
+							</div>
+						{{/if}}
+					</div>
+				</div>
+			{{/if}}
+			{{#if this.fundEvolutionIsVisible}}
+				<Panels::PanelOffer @orientation="horizontal" data-id="whatIsBenchmark" data-theme="light100" as |panel|>
+					<panel.container as |container|>
+						<container.media @image={{image-path "microillustrations/business_position.png"}} />
+						<container.content
+							@text={{t "label.myInvestmentsCheckpoint.bellowShowDescription"}}
+							@title={{t "label.myInvestmentsCheckpoint.evolutionOf" name=@model.fund.displayableName}}
+							as |content|
+						>
+							<content.link
+								@text={{t "label.myInvestmentsCheckpoint.whatIsBenchmark"}}
+								@onClick={{open-modal "what-is-benchmark" (hash isInternationalFund=this.model.isInternationalFund)}}
+							/>
+						</container.content>
+					</panel.container>
+				</Panels::PanelOffer>
+				<div class="panel-container set-padding-horizontal-2 set-padding-top" data-theme="light100">
+					<Forms::FormSelect
+						@label={{t "label.period"}}
+						@value={{or this.evolutionFundPeriodSelected.id "-"}}
+						@title={{if
+							this.evolutionFundPeriodSelected
+							(t this.evolutionFundPeriodSelected.label count=this.evolutionFundPeriodSelected.labelValue)
+							"-"
+						}}
+						@validations={{array (validators/required)}}
+						@onChange={{this.setEvolutionFundValues}}
+						as |select|
+					>
+						{{#each @model.evolutionPeriods as |period|}}
+							<select.option @value={{period.id}}>{{t period.label count=period.labelValue}}</select.option>
+						{{/each}}
+					</Forms::FormSelect>
+					{{#if this.evolutionFundError}}
+						<Panels::PanelInfo @image={{image-path "banners/error.svg"}} @size="small" as |panel|>
+							<panel.text>
+								{{t "label.myInvestmentsCheckpoint.error"}}
+							</panel.text>
+						</Panels::PanelInfo>
+					{{else}}
+						<p class="txt-align-c txt_s color_text-neutral set-padding-bottom set-padding-top-3">
+							{{t "label.profitabilityEvolution"}}
+						</p>
+						<p class="txt-align-c txt_s color_text-neutral set-padding-bottom">
+							<b><i>{{bbva-format-date this.selectedEvolutionFundDate withFormat="DD MMMM YYYY"}}</i></b>
+						</p>
+						<Lists::ListLegend @columns={{true}} as |list|>
+							<list.item
+								@amount={{format-bold
+									(bbva-format-number this.selectedEvolutionFundProfitability style="percent" negativeClass=" ")
+								}}
+								@iconColor="color_te-6-l"
+								@text={{t "label.fund"}}
+								@textEllipsis={{true}}
+							/>
+							<list.item
+								@amount={{format-bold
+									(bbva-format-number this.selectedBenchmarkProfitability style="percent" negativeClass=" ")
+								}}
+								@iconColor="color_pr-light"
+								@text={{t "label.myInvestmentsCheckpoint.benchmark"}}
+								@textEllipsis={{true}}
+							/>
+						</Lists::ListLegend>
+						<div class="set-padding-vertical">
+							<GraphPolylineContainer
+								@loading={{this.evolutionFundLoading}}
+								@smallloading={{true}}
+								@onchange={{this.setSelectedIndexEvolutionFund}}
+								as |graph|
+							>
+								<graph.linear
+									@idLine="0"
+									@color="--color_te-6-l"
+									@isFilled={{false}}
+									@strokeWidth={{3}}
+									@data={{this.evolutionFundProfitabilitiesValues}}
+								/>
+								<graph.linear
+									@idLine="1"
+									@color="--color_pr-light"
+									@isFilled={{false}}
+									@strokeWidth={{3}}
+									@data={{this.benchmarkProfitabilitiesValues}}
+								/>
+								<graph.marker @firstMarker={{true}} />
+								{{#if this.evolutionFundShowZeroLine}}
+									<graph.zero />
+								{{/if}}
+							</GraphPolylineContainer>
+							<div class="item-space-wide space-between global-border top" aria-hidden="true">
+								<span
+									data-id="periodStartDate"
+									class="item-space color_text-neutral txt_xs set-padding-top set-padding-bottom"
+								>{{bbva-format-date this.evolutionFundDates.firstDate withFormat="DD MMM YYYY"}}</span>
+								<span
+									data-id="periodEndDate"
+									class="item-space color_text-neutral txt_xs txt-align-r set-padding-top set-padding-bottom"
+								>{{bbva-format-date this.evolutionFundDates.lastDate withFormat="DD MMM YYYY"}}</span>
+							</div>
+							<div class="set-padding-bottom">
+								<Links::LinkItem
+									data-id="moreInfoGraphEvolutionId"
+									@align="left"
+									@text={{t "label.myInvestmentsCheckpoint.graphDescription.header"}}
+									@onClick={{open-modal
+										"more-info-graph"
+										(hash
+											description="label.myInvestmentsCheckpoint.graphDescription.profitabilityEvolution.description"
+											firstBlock="label.myInvestmentsCheckpoint.graphDescription.profitabilityEvolution.firstBlock"
+											title="label.myInvestmentsCheckpoint.graphDescription.profitabilityEvolution.title"
+										)
+									}}
+								/>
+							</div>
+						</div>
+					{{/if}}
+					<h2 class="set-padding-vertical bold txt_m color_text-neutral">
+						{{uppercase (t "label.myInvestmentsCheckpoint.evolutionComparison")}}
+					</h2>
+					<p class="color_text-neutral txt_s set-padding-bottom">
+						{{t "label.myInvestmentsCheckpoint.profitabilityVSBenchmark"}}
+					</p>
+					<Lists::ListDefinitionData @border="full" as |list|>
+						<list.item @title={{t "label.fund"}} />
+						<list.item @title={{t "label.myInvestmentsCheckpoint.benchmark"}} />
+					</Lists::ListDefinitionData>
+					{{#each
+						(array
+							(hash
+								profitabilityPercentage=@model.fund.extendedData.profitabilityCurrentYear.percentage
+								benchmarkProfitabilityPercentage=@model.fund.extendedData.benchmarkProfitabilityCurrentYear.percentage
+								title=(t "label.cumulativeCurrentYear")
+								border="full"
+							)
+							(hash
+								profitabilityPercentage=@model.fund.extendedData.profitabilityOneYear.percentage
+								benchmarkProfitabilityPercentage=@model.fund.extendedData.benchmarkProfitabilityOneYear.percentage
+								title=(t "label.lastYear")
+								border="full"
+							)
+							(hash
+								profitabilityPercentage=@model.fund.extendedData.profitabilityThreeYears.percentage
+								benchmarkProfitabilityPercentage=@model.fund.extendedData.benchmarkProfitabilityThreeYears.percentage
+								title=(t "label.threeYears2")
+							)
+						)
+						as |profitabilities|
+					}}
+						<Lists::ListDefinitionData @border={{profitabilities.border}} @inverse={{false}} as |list|>
+							<list.item
+								@title={{if
+									profitabilities.profitabilityPercentage
+									(bbva-format-number profitabilities.profitabilityPercentage style="percent" negativeClass=" ")
+									"-"
+								}}
+								@badgeVariability={{component
+									"badges/badge-variability"
+									size="large"
+									data-orientation=(if
+										(gt profitabilities.profitabilityPercentage 0)
+										"increase"
+										(if (lt profitabilities.profitabilityPercentage 0) "decrease")
+									)
+									data-status=(if
+										(gt profitabilities.profitabilityPercentage 0)
+										"success"
+										(if (lt profitabilities.profitabilityPercentage 0) "error" "neutral")
+									)
+								}}
+								@text={{profitabilities.title}}
+							/>
+							<list.item
+								@title={{if
+									profitabilities.benchmarkProfitabilityPercentage
+									(bbva-format-number
+										profitabilities.benchmarkProfitabilityPercentage style="percent" negativeClass=" "
+									)
+									"-"
+								}}
+								@badgeVariability={{component
+									"badges/badge-variability"
+									size="large"
+									data-orientation=(if
+										(gt profitabilities.benchmarkProfitabilityPercentage 0)
+										"increase"
+										(if (lt profitabilities.benchmarkProfitabilityPercentage 0) "decrease")
+									)
+									data-status=(if
+										(gt profitabilities.benchmarkProfitabilityPercentage 0)
+										"success"
+										(if (lt profitabilities.benchmarkProfitabilityPercentage 0) "error" "neutral")
+									)
+								}}
+								@text={{profitabilities.title}}
+							/>
+						</Lists::ListDefinitionData>
+					{{/each}}
+				</div>
+			{{/if}}
+			{{#if (not (is-empty @model.stabilityWindowPeriods))}}
+				<Panels::PanelOffer @orientation="horizontal" data-id="stabilityFund" as |panel|>
+					<panel.container as |container|>
+						<container.media @image={{image-path "microillustrations/move_money.png"}} />
+						<container.content
+							@title={{t "label.myInvestmentsCheckpoint.stabilityFund"}}
+							@text={{t "label.myInvestmentsCheckpoint.analyzesPeriodsDescription"}}
+							as |content|
+						>
+							<content.group as |group|>
+								<group.item as |item|>
+									<item.button
+										data-id="stabilityWindowId"
+										@text={{t "label.review2"}}
+										@onClick={{open-modal
+											"stability-window"
+											(hash data=@model.stabilityWindowPeriods isInternationalFund=this.model.isInternationalFund)
+										}}
+									/>
+								</group.item>
+							</content.group>
+						</container.content>
+					</panel.container>
+				</Panels::PanelOffer>
+			{{/if}}
+			{{#if this.netContributionsIsVisible}}
+				<Panels::PanelOffer @orientation="horizontal" data-id="whatOtherInvestorsDo" data-theme="dark400" as |panel|>
+					<panel.container as |container|>
+						<container.media @image={{image-path "microillustrations/revolving_payment_euro_dark.png"}} />
+						<container.content
+							@title={{t "label.myInvestmentsCheckpoint.whatOtherInvestorsDo"}}
+							@text={{t "label.myInvestmentsCheckpoint.knowContributionsDescription"}}
+						/>
+					</panel.container>
+				</Panels::PanelOffer>
+				<Lists::ListDefinitionAmount
+					data-theme="dark400"
+					@align="center"
+					@title={{if
+						this.netContributionsSelected.valueDate
+						(capitalize (bbva-format-date this.netContributionsSelected.valueDate withFormat="MMMM YYYY"))
+						(t "label.netContributionPeriod")
+					}}
+					@amount={{bbva-format-number
+						this.netContributionsSelected.amount
+						currency=this.netContributionsSelected.currency
+						size="txt_xl"
+						negativeClass=" "
+						minimumFractionDigits=0
+						maximumFractionDigits=0
+					}}
+				/>
+				<DataVisualizations::DataVisualizationLinearsBars
+					data-theme="dark400"
+					@barsGrouped={{false}}
+					@maxValue={{this.netContributionsSumValues.maxValue}}
+					@yaxis={{this.netContributionsYAxis}}
+					@xaxis={{this.netContributionsMonths}}
+					@data={{this.netContributionsMappedValues}}
+					@onClick={{this.netContributionClick}}
+				/>
+				<div class="panel-container set-padding-2" data-theme="dark400">
+					<Links::LinkItem
+						data-id="moreInfoGraphOtherInvestorsId"
+						@align="left"
+						@text={{t "label.myInvestmentsCheckpoint.graphDescription.header"}}
+						@onClick={{open-modal
+							"more-info-graph"
+							(hash
+								description="label.myInvestmentsCheckpoint.graphDescription.otherInvestors.description"
+								firstBlock="label.myInvestmentsCheckpoint.graphDescription.otherInvestors.firstBlock"
+								params=this.otherInvestorsParams
+								title="label.myInvestmentsCheckpoint.graphDescription.otherInvestors.title"
+							)
+						}}
+					/>
+				</div>
+			{{/if}}
+			<div
+				class="panel-container set-padding-horizontal-2 set-padding-bottom-2"
+				data-id="exploreOurTools"
+				data-theme="light100"
+			>
+				<h2 class="set-padding-vertical bold txt_m color_text-neutral">
+					{{uppercase (t "label.myInvestmentsCheckpoint.exploreOurTools")}}
+				</h2>
+				{{#if (and @model.isInternationalFund (not (is-empty @model.maxHistoricalDate)))}}
+					<Lists::ListClip
+						class="set-margin-bottom-2 box-look"
+						data-id="advancedFundComparator"
+						data-theme="light"
+						@image={{image-path "microillustrations/invest.png"}}
+						@link={{true}}
+						@title={{t "label.myInvestmentsCheckpoint.advancedFundComparator"}}
+						@text={{t "label.myInvestmentsCheckpoint.compareYourFundWithOthers"}}
+						@onClick={{transition-to-external
+							"my-investments-suggest-funds"
+							(hash
+								queryParams=(hash
+									isin=@model.fund.isin
+									investedAmount=@model.fund.availableBalance.amount
+									investedCurrency=@model.fund.availableBalance.currency.id
+									comparisionDate=(bbva-format-date @model.maxHistoricalDate withFormat="YYYY-MM-DD")
+								)
+							)
+						}}
+					/>
+				{{/if}}
+				{{#if
+					(or
+						@model.fund.fundComparator.showLinkFundComparator @model.fund.detail.fundComparator.showLinkFundComparator
+					)
+				}}
+					<Lists::ListClip
+						class="set-margin-bottom-2 box-look"
+						data-id="multi3strategyComparator"
+						data-theme="light"
+						@image={{image-path "microillustrations/search_graphic.png"}}
+						@link={{true}}
+						@title={{t "label.myInvestmentsCheckpoint.multi3strategyComparator"}}
+						@text={{t "label.myInvestmentsCheckpoint.multi3strategyComparatorDescription"}}
+						@onClick={{transition-to-external "fund-comparator-multi"}}
+					/>
+				{{/if}}
+				<Lists::ListClip
+					class="box-look"
+					data-id="marketSituation"
+					data-theme="light"
+					@image={{image-path "microillustrations/books.png"}}
+					@link={{true}}
+					@title={{t "label.myInvestmentsCheckpoint.marketSituation"}}
+					@text={{t "label.myInvestmentsCheckpoint.marketSituationDescription"}}
+					@onClick={{transition-to-external "podcast-market-analysis"}}
+                    @text_to_search="value_propr"
+				/>
+			</div>
+			<ContactWith
+				@params={{hash
+					selectedProfile=this.selectedProfile
+					initialContribution=this.initialContribution
+					monthlyAmount=this.monthlyAmount
+				}}
+				@onContactWithYourManager={{this.createConversation}}
+				@onContactWithBbva={{transition-to-external "my-manager"}}
+			/>
+			{{#if this.feedbackButton}}
+				<FeedbackButton @options={{hash carry_tipo="rentabilidad-negativa"}} />
+			{{/if}}
+		</MainContent>
+	</div>
+</WrapperMain>

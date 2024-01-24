@@ -1,0 +1,268 @@
+<WrapperMain as |wrapper|>
+	<wrapper.header @title={{t "label.myInvestments"}} @left="back" @back={{this.backStep}} @menu={{this.openMenu}} />
+
+	<div
+		class="content wrapper flexy-item panel-container"
+		data-id="myInvestmentsAndGoalsIndexRoute"
+		data-theme="light100"
+	>
+		<MainContent>
+			<Lists::ListLink
+				data-id="btnPanelFilter"
+				data-theme="light100"
+				@text={{t
+					"label.selectedProductsInvestment"
+					availableProducts=(if this.defaultDashboard this.externalProductsNum this.userProductListVisibleNum)
+					products=(if this.defaultDashboard this.externalProductsNum this.userProductListNum)
+				}}
+				@textLink={{t "label.configure"}}
+				@onClick={{this.goToLocalConfiguration}}
+			/>
+			{{#if
+				(and
+					(and (not this.onlyBBVAproducts) (not this.onlyExternalproducts))
+					this.configuration.seeMyFollowUpOtherEntities.isActive
+				)
+			}}
+				<div class="panel-container">
+					<Tabs::TabDefault
+						@accessibilityText={{t "accessibility.myInvestmentsDashboardType"}}
+						@selected={{this.defaultDashboard}}
+						@onChange={{fn (mut this.defaultDashboard)}}
+						as |tab|
+					>
+						<tab.panel data-id="bbvaDashboard" @text={{t "label.appName"}} />
+						<tab.panel data-id="externalDashboard" @text={{t "label.otherEntities"}} />
+					</Tabs::TabDefault>
+				</div>
+			{{/if}}
+
+			{{#if (or this.onlyBBVAproducts (not this.defaultDashboard))}}
+				<article>
+					<div class="panel-container set-padding-horizontal-2 set-padding-top-2" data-theme="dark300">
+						<PeriodSelector
+							@selectedPeriodId={{this.selectedDate}}
+							@customDateEndAdjust={{this.customDateEndAdjust}}
+							@extraInformation={{this.extraInformation}}
+							@origin={{this.originForCustom}}
+							@onChange={{this.chargeInfoNewDate}}
+						/>
+					</div>
+
+					<GraphSelector @dataTheme="dark300" @typeGraph={{this.typeGraph}} @onChange={{this.chargeGraphSelector}} />
+
+					<EvolutionGraph
+						@origin="globalNew"
+						@headerSummary={{this.infoGraphEvolution.headerGlobalSummary}}
+						@configEvolutionValue={{this.infoGraphEvolution.configEvolutionValue}}
+						@errorService={{this.infoGraphEvolution.errorService}}
+						@idNewGraph={{this.selectedDate}}
+						@typeGraph={{this.typeGraph}}
+						@infoSelected={{this.indexInfoSelected}}
+						@backgroundColorClass="dark300"
+						@fontColorClass="color_text-neutral"
+						@showDetail={{true}}
+						@showDetailedStudy={{this.showDetailedStudy}}
+						@colorLine="--color_te-2-l"
+						@widthLine={{2}}
+						@isComplete={{true}}
+						@extraClass="set-padding-horizontal-2"
+						@onChange={{this.changeInfoSelected}}
+						@themeListDefinition="dark300"
+					/>
+				</article>
+
+				<InsightsNotifications
+					@type="dashboard"
+					@goals={{this.goals}}
+					@listProductsVisible={{this.userProductListVisible}}
+					@infoInvestments={{this.infoInvestments}}
+					@summaries={{this.infoGlobalEvolutionValue}}
+					@allowedOperations={{array "all"}}
+					@statusNotifications={{this.statusNotifications}}
+					@onchange={{this.saveNotificationsMessage}}
+					@onSaveMessages={{this.saveGoalsMessages}}
+					@oncontinue={{this.goToContribution}}
+					@goToConfiguration={{this.goToGlobalConfiguration}}
+					@goToInfoDividends={{this.goToInfoDividends}}
+				/>
+
+				<article class="panel-container" data-theme="light100">
+					<Headers::HeaderCategory @title={{t "label.myInvestmentsMyProducts"}} @level={{3}} @titleDark={{true}} />
+					<p data-id="title_{{this.selectedDate}}" class="txt_s color_text-neutral-secondary set-padding-horizontal-2">
+						{{this.titleSelectedDate}}
+					</p>
+
+					{{#if (and this.infoCardsProduct (is-fulfilled this.infoDashboadPromise))}}
+						<Compositions::CompositionCarouselSwipe
+							data-id="carouselProducts"
+							class="set-padding-vertical-2"
+							@content={{this.infoCardsProduct}}
+							@accessibilityText={{t "accessibility.investmentsProductsCarousel"}}
+							@controls={{component
+								"cards/card-control"
+								accessibilityTextPrevious=(t "accessibility.previousProduct")
+								accessibilityTextNext=(t "accessibility.nextProduct")
+							}}
+							@selected={{this.selectedSlide}}
+							@onChange={{fn (mut this.selectedSlide)}}
+							as |cardProduct slide|
+						>
+							<slide.card @type="product">
+								<div tabindex="-1" class="set-padding-horizontal set-padding-vertical">
+									<CarouselCard
+										@cardProduct={{cardProduct}}
+										@onClickProductName={{queue
+											(fn
+												this.sendDataLayer
+												(hash
+													interactionLevel=(concat this.TRACKING_CLICK.carouselProducts.detail " " cardProduct.family)
+												)
+											)
+											(fn this.goToProduct cardProduct.product)
+										}}
+										@onClickContribution={{fn this.goToCarouselContribution cardProduct.product}}
+									/>
+								</div>
+							</slide.card>
+						</Compositions::CompositionCarouselSwipe>
+					{{else}}
+						{{#if this.errorSummary}}
+							<Panels::PanelInfo @image={{image-path (empty-state-image)}} as |panel|>
+								<panel.text>
+									{{t this.errorService.label}}
+								</panel.text>
+							</Panels::PanelInfo>
+						{{/if}}
+					{{/if}}
+
+					{{#if (gt this.goals.length 0)}}
+						<Headers::HeaderCategory
+							data-theme="light100"
+							@title={{t "label.myInvestmentsMyGoals"}}
+							@level={{3}}
+							class="set-padding"
+							@titleDark={{true}}
+						/>
+						<Compositions::CompositionCarouselSwipe
+							data-id="goalsCarousel"
+							data-theme="light100"
+							class="set-padding-top set-padding-bottom-3"
+							@content={{this.goals}}
+							@accessibilityText={{t "accessibility.goalsCarousel"}}
+							@controls={{component
+								"cards/card-control"
+								accessibilityTextPrevious=(t "accessibility.previousGoal")
+								accessibilityTextNext=(t "accessibility.nextGoal")
+								addItem=true
+							}}
+							@selected={{this.selectedGoalByDefault}}
+							as |goal slide|
+						>
+							<slide.card @type="product">
+								<div tabindex="-1">
+									{{#if goal.isCreate}}
+										<Cards::CardIcon
+											data-id="optNewGoal"
+											@icon="icon-add"
+											@title={{t "label.iWantNewGoal"}}
+											@onClick={{transition-to "create-goal"}}
+											@wide={{true}}
+										/>
+									{{else if goal.isCancelled}}
+										<Lists::ListClip
+											@image={{image-path goal.icon}}
+											@type="photo"
+											@title={{goal.description}}
+											@text={{t
+												"label.myInvestmentsMyGoalText"
+												amount=(bbva-format-number goal.realAmount.amount currency=goal.realAmount.currency)
+												date=goal.maturityDateYear
+											}}
+										/>
+										<div class="set-padding-horizontal-2 set-padding-bottom-2">
+											<Notifications::NotificationHelp
+												data-id="hiddenProductsMessage"
+												class="set-margin-bottom-2"
+												@text={{t "label.myInvestmentsMyGoalInfo"}}
+												@type="info"
+											/>
+											<Links::LinkItem
+												data-id="configProducts"
+												@accessibilityText={{t "accessibility.myInvestmentsGoalAccessShowProducts"}}
+												@text={{t "label.showProducts"}}
+												@onClick={{transition-to-external "config-products"}}
+												as |link|
+											>
+												<link.icon @icon="icon-show" />
+											</Links::LinkItem>
+										</div>
+									{{else}}
+										<Lists::ListGoal
+											@clip={{component "clips/clip-box" type="image" image=(image-path goal.icon)}}
+											@title={{or goal.description (t "label.emptyTitle")}}
+											@onTitleClick={{queue
+												(fn
+													this.sendDataLayer
+													(hash interactionLevel=(concat goal.description "-" goal.id "-" goal.type.id))
+												)
+												(transition-to "detail-goal" goal.id this.manageOperation)
+											}}
+											@accessibilityTitleText={{t "accessibility.goalTitleDescription"}}
+											@description={{t
+												"label.getAmountBeforeDate"
+												amount=(bbva-format-number goal.realAmount.amount currency=goal.realAmount.currency)
+												date=goal.maturityDateDayMonthYearLong
+											}}
+											@amount1={{bbva-format-number
+												(if goal.isCompletedStatus goal.realAmount.amount goal.balance.amount)
+												currency=goal.balance.currency
+											}}
+                                            @text_to_search="
+                                                value_prop two lineas
+                                            "
+											@amount2={{bbva-format-number goal.realAmount.amount currency=goal.realAmount.currency}}
+											@description3={{concat (t "label.completed") ":"}}
+											@description4={{goal.formattedCompletedPercentage}}
+											as |horizontalBar|
+										>
+											<horizontalBar.bar @accessibilityText={{t "accessibility.goalProgressBarDescription"}} as |bar|>
+												<bar.item @value={{goal.visualCompletedPercentage}} @color="color-10" />
+											</horizontalBar.bar>
+										</Lists::ListGoal>
+									{{/if}}
+								</div>
+							</slide.card>
+						</Compositions::CompositionCarouselSwipe>
+					{{/if}}
+				</article>
+				{{#if this.configuration.seeMyFollowUpOnlineReport.isActive}}
+					<div class="set-margin-top-2 set-padding-3 panel-container" data-theme="light">
+						<Links::LinkItem @text={{t "label.myInvestmentsMyGoalsDownload"}} @onClick={{this.downloadExcel}} as |link|>
+							<link.icon @icon="icon-download" />
+						</Links::LinkItem>
+					</div>
+				{{/if}}
+				{{#if (and this.infoGraphEvolution this.feedbackButton)}}
+					<div class="set-padding-bottom-3">
+						<FeedbackLikeUnlikeButton
+							@title="label.titleYourFeedback"
+							@options={{hash carry_tipo="FOLLOWUP"}}
+							@category="INVESTMENTS"
+							@formId="df_minver_p"
+						/>
+					</div>
+				{{/if}}
+			{{else if (or this.onlyExternalproducts this.defaultDashboard)}}
+				<ExternalDashboard
+					@products={{this.externalInfoInvestments}}
+					@onClickProductName={{this.goToProduct}}
+					@onClickTransferProduct={{this.goToTransferProduct}}
+				/>
+				{{#if this.feedbackButton}}
+					<FeedbackButton @options={{hash carry_tipo="Otras entidades"}} />
+				{{/if}}
+			{{/if}}
+		</MainContent>
+	</div>
+</WrapperMain>

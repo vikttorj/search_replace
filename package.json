@@ -1,0 +1,24 @@
+{
+  "name": "replace-text",
+  "version": "1.0.0",
+  "description": "Functionality replace text inside tag html in a folder recursive",
+  "main": "index.js",
+  
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "replace-text": "./index.js"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Victor Jiménez Gómez",
+    "email": "vic.jimenezgomez@gmail.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "prompts": "^2.4.2",
+    "yargs": "^17.7.2"
+  }
+}
