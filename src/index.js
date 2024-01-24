@@ -28,7 +28,7 @@ Questions:
   3. textSearch                                                                    Lo que hay que buscar
   4. insideTag                                                                     Dentro de un tag?
   5. textReplace                                                                   Lo que hay que reemplazar
-\n\nCLI to replace one text with another recursively. Search in tag or replace all\n`);
+\n\nCLI to replace one text with another recursively. \nSearch in tag or replace all\n\n© All right reserved. (Since 2024)`);
   }
   if ('version' in options) {
     var pjson = require('../package.json');
