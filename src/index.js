@@ -1,16 +1,18 @@
 #! /usr/bin/env node
-const prompts = require('prompts');
-prompts.override(require('yargs').argv);
-const { exec } = require('child_process');
+const prompts = require("prompts");
+prompts.override(require("yargs").argv);
+const { exec } = require("child_process");
+const { ProgressBar } = require("ascii-progress");
 
-
-const objectSearch = 
-{
-  pathSearch: '',
-  language: 'ember',
-  textSearch: '',
-  textReplace: ''
+const objectSearch = {
+  pathSearch: "",
+  language: "ember",
+  textSearch: "",
+  textReplace: "",
 };
+
+let finished = 0;
+let cont = 0;
 // Search on the current PATH?
 console.log(`\n
                            dP          d8888888888P         
@@ -27,11 +29,11 @@ dP       '888888P'88Y888P' dP '88888P8 Y8888888888P '888888P'
 (async () => {
   const response = await prompts([
     {
-      type: 'confirm',
-      name: 'currentPath',
-      message: 'Search on the current PATH?',
-      initial: true
-    }
+      type: "confirm",
+      name: "currentPath",
+      message: "Search on the current PATH?",
+      initial: true,
+    },
   ]);
   response.currentPath == false || response.currentPath == true
     ? question(response)
@@ -39,126 +41,155 @@ dP       '888888P'88Y888P' dP '88888P8 Y8888888888P '888888P'
 })();
 
 async function question(answer) {
-  if(!answer.currentPath) {
+  if (!answer.currentPath) {
     response = await prompts([
       {
-        type: 'text',
-        name: 'currentPathNew',
-        message: `What is the complete PATH to search?`
+        type: "text",
+        name: "currentPathNew",
+        message: `What is the complete PATH to search?`,
       },
     ]);
-    if(response.currentPathNew == '') {
-      console.log('\n!!!! Path empty\n')
+    if (response.currentPathNew == "") {
+      console.log("\n!!!! Path empty\n");
       question(false);
     }
-    response.currentPathNew
-      ? question2(response.currentPathNew)
-      : false;
+    response.currentPathNew ? question2(response.currentPathNew) : false;
   } else {
-    exec('pwd', (error, stdout, stderr) => {
-      question2(stdout);
+    exec("pwd", (error, stdout, stderr) => {
+      stdout = stdout.substring(0, stdout.length - 1);
+      question2(`${stdout}/`);
       return;
     });
-  } 
+  }
 }
 
 async function question2(pathSearch) {
-  
   objectSearch.pathSearch = pathSearch;
   response = await prompts([
     {
-      type: 'select',
-      name: 'language',
+      type: "select",
+      name: "language",
       message: `What LANGUAGE should I search in?`,
       choices: [
-        { title: 'EMBER', value: 'ember' },
-        { title: 'LIT', value: 'lit' }
+        { title: "EMBER", value: "ember" },
+        { title: "LIT", value: "lit" },
       ],
     },
   ]);
-  response.language
-    ? question3(response.language)
-    : false;
+  response.language ? question3(response.language) : false;
 }
 
 async function question3(language) {
   objectSearch.language = language;
   response = await prompts([
     {
-      type: 'text',
-      name: 'textSearch',
+      type: "text",
+      name: "textSearch",
       message: `What do I have to LOOK FOR? `,
     },
   ]);
-  response.textSearch
-    ? question4(response.textSearch)
-    : false;
+  response.textSearch ? question4(response.textSearch) : false;
 }
 
 async function question4(textSearch) {
   objectSearch.textSearch = textSearch;
   response = await prompts([
     {
-      type: 'text',
-      name: 'textReplace',
+      type: "text",
+      name: "textReplace",
       message: `What do you want me to REPLACE?`,
     },
   ]);
-  response.textReplace
-    ? question5(response.textReplace)
-    : false;
+  response.textReplace ? question5(response.textReplace) : false;
 }
 
 async function question5(textReplace) {
   objectSearch.textReplace = textReplace;
   response = await prompts([
     {
-      type: 'confirm',
-      name: 'confirmReplace',
-      message: `Do you want to replace '${objectSearch.textSearch}' with '${objectSearch.textReplace}' in ${objectSearch.language.toLocaleUpperCase()} now? `,
-      initial: true
+      type: "confirm",
+      name: "confirmReplace",
+      message: `Do you want to replace '${objectSearch.textSearch}' with '${
+        objectSearch.textReplace
+      }' in ${objectSearch.language.toLocaleUpperCase()} now? `,
+      initial: true,
     },
   ]);
   response.confirmReplace == false || response.confirmReplace == true
-    ? replaceFn(response.confirmReplace)
+    ? replaceAnimated(response.confirmReplace)
     : false;
 }
 
-async function replaceFn (confirm) {
-  if(confirm) {
-    console.log(`\n
+async function replaceAnimated(confirm) {
+  console.log("\nReplacing text ...\n");
+  if (confirm) {
+    replaceFn();
+    const bar = new ProgressBar({ total: 100, callback: finishAnimated });
 
- +-+-+-+ +-+-+-+-+-+-+-+-+-+-+
- |Q|u|e| |c|o|m|i|e|n|c|e|n| |
- +-+-+-+ +-+-+-+-+-+-+-+-+-+-+
- |l|o|s| | | |j|u|e|g|o|s| | |      
- +-+-+-+ +-+-+-+-+-+-+-+-+-+-+      
- |d|e|l| | | |H|a|m|b|r|e| | |    
- +-+-+-+ +-+-+-+-+-+-+-+-+-+-+        
+    const tokens = ":percent.bold.yellow :etas.italic.cyan";
 
+    const iv = setInterval(() => {
+      let completedColor = "";
+      const current = bar.current;
+      if (current < 20) {
+        completedColor = "red";
+      } else if (current < 40) {
+        completedColor = "magenta";
+      } else if (current < 60) {
+        completedColor = "yellow";
+      } else if (current < 80) {
+        completedColor = "blue";
+      } else if (current < 100) {
+        completedColor = "green";
+      }
 
+      const schema = ` [.white:filled.${completedColor}:blank.grey] .white${tokens}`;
 
- ┏┓            •         
- ┃┃┓┏┏┓  ┏┏┓┏┳┓┓┏┓┏┓┏┏┓┏┓
- ┗┻┗┻┗   ┗┗┛┛┗┗┗┗ ┛┗┗┗ ┛┗
- ┓     •                 
- ┃┏┓┏  ┓┓┏┏┓┏┓┏┓┏        
- ┗┗┛┛  ┃┗┻┗ ┗┫┗┛┛        
-  ┓  ┓ ┛┓┏   ┛ ┓         
- ┏┫┏┓┃  ┣┫┏┓┏┳┓┣┓┏┓┏┓    
- ┗┻┗ ┗  ┛┗┗┻┛┗┗┗┛┛ ┗     
-                         
- 
+      bar.setSchema(schema);
+      bar.tick();
 
-    \n`)
-    console.log(objectSearch)
+      if (bar.completed) {
+        clearInterval(iv);
+      }
+    }, (Math.random() * (35 - 8) + 8));
   }
 }
 
+function finishAnimated() {
+  cont++;
+  cont > 4 ? finished++ : null;
+  finished++;
+  if (finished == 1) {
+    finished = 0;
+    replaceAnimated(true);
+  } 
+  finish();
+}
+async function replaceFn() {
 
 
 
 
+  finished++;
+  finish();
+}
+
+function finish() {
+  if (finished > 1) {
+    console.log(`\n
+      ┏┓            •         
+      ┃┃┓┏┏┓  ┏┏┓┏┳┓┓┏┓┏┓┏┏┓┏┓
+      ┗┻┗┻┗   ┗┗┛┛┗┗┗┗ ┛┗┗┗ ┛┗
+      ┓     •                 
+      ┃┏┓┏  ┓┓┏┏┓┏┓┏┓┏        
+      ┗┗┛┛  ┃┗┻┗ ┗┫┗┛┛        
+      ┓  ┓ ┛┓┏   ┛ ┓         
+      ┏┫┏┓┃  ┣┫┏┓┏┳┓┣┓┏┓┏┓    
+      ┗┻┗ ┗  ┛┗┗┻┛┗┗┗┛┛ ┗     
+        \n`);
+    console.log(objectSearch);
+  }
+}
 
 /*
 var readline = require('readline');
