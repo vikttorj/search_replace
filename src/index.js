@@ -21,7 +21,7 @@ const objectSearch =
       initial: true
     }
   ]);
-  response.currentPath 
+  response.currentPath == false || response.currentPath == true
     ? question(response)
     : false;
 })();
@@ -35,6 +35,10 @@ async function question(answer) {
         message: `What is the complete PATH to search?`
       },
     ]);
+    if(response2.currentPathNew == '') {
+      console.log('\n!!!! Path empty\n')
+      question(false);
+    }
     response2.currentPathNew
       ? question2(response2.currentPathNew)
       : false;
@@ -48,6 +52,7 @@ async function question(answer) {
 }
 
 async function question2(pathSearch) {
+  
   objectSearch.pathSearch = pathSearch;
   response3 = await prompts([
     {
@@ -103,7 +108,7 @@ async function question5(textReplace) {
       initial: true
     },
   ]);
-  response6.textReplace
+  response.confirmReplace == false || response.confirmReplace == true
     ? replaceFn(response6.confirmReplace)
     : false;
 }
